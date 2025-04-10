@@ -1,0 +1,170 @@
+/* Full height container to center everything */
+.login-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100vh;
+    background-image: url('../images/loginbg.jpg');
+    background-position: center;
+    background-size: cover;
+    overflow: hidden;
+  }
+  
+  /* Main box to contain both the image and form */
+  .login-box {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    width: 90%;
+    height: 90%;
+    background-color: #fff;
+    border-radius: 30px;
+    box-shadow: rgba(0, 0, 0, 0.07) 0px 1px 2px, rgba(0, 0, 0, 0.07) 0px 2px 4px, rgba(0, 0, 0, 0.07) 0px 4px 8px, rgba(0, 0, 0, 0.07) 0px 8px 16px, rgba(0, 0, 0, 0.07) 0px 16px 32px, rgba(0, 0, 0, 0.07) 0px 32px 64px;
+    padding: 50px;
+    gap: 30px;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  /* The image background layer */
+  .login-image {
+    position: absolute;
+    top: 0;
+    left: 0;
+    background: url('../images/psg.jpg') no-repeat center center/cover;
+    width: 50%; /* Adjust to cover half of the screen */
+    height: 100%;
+    border-radius: 30px;
+    z-index: 1; /* Keeps the image above the forms */
+    transition: transform 0.8s ease-in-out; /* Smooth sliding animation */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);  
+  }
+  
+  /* When Sign-Up is active, slide the image to the right */
+  .login-image.slide-right {
+    transform: translateX(100%); /* Slide the image to the right */
+  }
+  
+  /* Container for the form content (Sign-In or Sign-Up) */
+  .login-content {
+    position: relative;
+    z-index: 2; /* Content is above the image */
+    width: 90%;
+    display: flex;
+    justify-content: space-between;
+    gap: 30px;
+  }
+  
+  /* Styles for Sign-In and Sign-Up forms */
+  .form-container {
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+    gap: 20px;
+    width: 100%;
+    max-width: 400px;
+    transition: opacity 0.8s ease-in-out; /* Smooth fade effect */
+  }
+  
+  /* Sign-In form is visible initially */
+  .form-sign-in {
+    opacity: 1;
+  }
+  
+  /* Hide Sign-In form when Sign-Up is active */
+  .form-sign-in.hidden {
+    opacity: 0;
+    pointer-events: none; /* Disable interaction */
+  }
+  
+  /* Sign-Up form is initially hidden */
+  .form-sign-up {
+    opacity: 0;
+    pointer-events: none;
+  }
+  
+  /* When Sign-Up is active, make Sign-Up form visible */
+  .form-sign-up.visible {
+    opacity: 1;
+    pointer-events: all; /* Enable interaction */
+  }
+  
+  /* Form styling */
+  .welcome-back,
+  .signup-link,
+  .instruction {
+    text-align: center;
+  }
+  
+  .welcome-back {
+    font-size: 2rem;
+  }
+  
+  .instruction {
+    font-size: 0.9rem;
+    color: #666;
+    margin-bottom: 25px;
+  }
+  
+  /* Form fields and labels */
+  .login-form label {
+    font-size: 0.9rem;
+    margin-left: 5px;
+    font-weight: 600;
+  }
+  
+  .login-form input,
+  select {
+    margin-top: 10px;
+    padding: 11px;
+    font-size: 1rem;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    font-size: 0.9rem;
+    color: #333;
+    margin-bottom: 15px;
+  }
+  
+  .password-container input {
+    width: 94%;
+  }
+  
+  /* Login Button */
+  .login-button {
+    padding: 13px;
+    background-color: #000;
+    color: #fff;
+    font-size: 1rem;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    margin-top: 30px;
+    width: 100%;
+    margin-bottom: 15px;
+  }
+  
+  .login-button:hover {
+    background-color: #333;
+  }
+  
+  /* Link for switching between Sign-In and Sign-Up */
+  .signup-link {
+    margin-top: 20px;
+    font-size: 0.9rem;
+  }
+  
+  .signup-link a {
+    color: #000;
+    text-decoration: none;
+  }
+  
+  .switch-back {
+    font-size: 0.9rem;
+    color: #666;
+    cursor: pointer;
+    display: block;
+    text-align: center;
+  }
+  

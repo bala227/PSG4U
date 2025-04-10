@@ -1,0 +1,77 @@
+.wholepage{
+    overflow-x: hidden;
+    background: white;
+  }
+  .homebody{
+      background-image: url('../images/Home_bg.jpeg');
+      background-size: cover;
+      background-repeat: no-repeat;
+      width: 100vw;
+      height: 100vh;
+      margin-bottom: 0;
+      padding-top: 100px;
+    }
+    .home h1{
+      display: flex;
+      justify-content: center;
+      align-items: center ;
+      position: relative;
+      top : 100px;
+      font-size: 50px; /* Set font size to match Figma */
+      font-weight: 500;
+    }
+    .home i{
+      display: flex;
+      justify-content: center;
+      align-items: center ;
+      position: relative;
+      top : 100px;
+      margin-top: 30px;
+      font-weight: 450;
+      font-size: 40px;
+    }
+
+  .loginbutton{
+      display: block; 
+      margin: 150px auto; 
+      width: 180px;
+      height : 80px;
+      background-color: #6C8BBA;
+      border-width:2px;
+      border-radius: 10px;
+      border-color: black;
+      border-style: solid;
+      color:black;
+      font-weight: 300;
+      text-align:center;
+      font-size: 29px;
+      transition:all 0.2s;
+      cursor: pointer;
+      box-shadow:0 2px 2px 0;
+  }
+  .loginbutton span{
+    cursor:pointer;
+    display: inline-block;
+    position: relative;
+    transition: 0.2s;
+    color: black;
+  }
+  .loginbutton span:after{
+    content:'\00bb';
+    position: absolute;
+    opacity:0;
+    top:0;
+    transition: 0.3s;
+  }
+  .loginbutton:hover span{
+    padding-right: 30px;
+    color:#6C8BBA;
+    background-color: black;    
+  }
+  .loginbutton:hover span:after{
+    opacity:1;
+    right: 0;
+  }
+  .loginbutton:hover{
+    background-color: black;
+  }
