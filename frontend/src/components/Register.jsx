@@ -98,7 +98,8 @@ function Register() {
           <div className="loading-overlay">
           <div className="loading-content">
             <Lottie options={defaultOptions} height={200} width={200} />
-            <p>Loading... Please wait.</p>
+            <p>Loading..</p>
+            <p>Please Wait 😁✌️</p>
           </div>
         </div>
         ) : (
