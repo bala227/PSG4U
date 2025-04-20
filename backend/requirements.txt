@@ -14,3 +14,4 @@ scikit-learn
 python-dotenv
 requests
 beautifulsoup4
+dj_database_url
