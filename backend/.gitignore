@@ -7,10 +7,7 @@ __pycache__/
 # Ignore virtual environments  
 .venv/  
 venv/  
-
-# Ignore SQLite database files  
-*.sqlite3  
-*.db  
+ 
 
 # Ignore Django migrations  
 migrations/  
