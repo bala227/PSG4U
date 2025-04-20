@@ -35,6 +35,7 @@ INSTALLED_APPS = [
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
+         'rest_framework.authentication.SessionAuthentication',
     ),
 }
 
@@ -143,3 +144,6 @@ CORS_ALLOW_CREDENTIALS = True
 AUTH_USER_MODEL = 'app.User'
 
 CSRF_TRUSTED_ORIGINS = ["https://psg4u.vercel.app"]
+
+SESSION_COOKIE_SAMESITE = 'None'
+SESSION_COOKIE_SECURE = True
