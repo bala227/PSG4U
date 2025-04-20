@@ -28,7 +28,7 @@ def current_user(request):
         'rollno': user.rollno,
         'points': user.points,
         'semester': user.semester_number
-    })
+})
 
 @api_view(['GET'])
 def all_users(request):
