@@ -24,7 +24,7 @@
     useEffect(() => {
       const fetchResources = async () => {
         try {
-          const res = await fetch("http://localhost:8000/psg4u/resources/");
+          const res = await fetch("https://psg4u.onrender.com/psg4u/resources/");
           const data = await res.json();
           setSubjects(data);
         } catch (error) {
@@ -37,7 +37,7 @@
 
     const handleSuggestSubmit = async () => {
       try {
-        const res = await fetch("http://localhost:8000/psg4u/suggest-resource/", {
+        const res = await fetch("https://psg4u.onrender.com/psg4u/suggest-resource/", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -57,7 +57,7 @@
     
         if (data.status === "accepted") {
           alert("✅ Resource accepted and added!");
-          const updated = await fetch("http://localhost:8000/psg4u/resources/");
+          const updated = await fetch("https://psg4u.onrender.com/psg4u/resources/");
           const updatedData = await updated.json();
           setSubjects(updatedData);
           setNewSubject({ subject: "", link: "" });  // ✅ match the correct keys

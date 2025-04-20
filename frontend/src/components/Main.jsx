@@ -19,7 +19,7 @@ export const Main = () => {
 
   useEffect(() => {
     // Existing fetch for logged-in user
-    fetch("http://localhost:8000/psg4u/me/", {
+    fetch("https://psg4u.onrender.com/psg4u/me/", {
       method: "GET",
       credentials: "include",
     })
@@ -33,7 +33,7 @@ export const Main = () => {
       });
 
     // New fetch for leaderboard users
-    fetch("http://localhost:8000/psg4u/users/", {
+    fetch("https://psg4u.onrender.com/psg4u/users/", {
       method: "GET",
       credentials: "include",
     })
@@ -237,15 +237,22 @@ export const Main = () => {
       </section>
 
       {/* Footer */}
-      <footer className="bg-white mt-20 relative z-10 text-center py-6 text-gray-400 text-sm">
+      <footer className="bg-white mt-20 relative z-10 text-center py-5 text-gray-400 text-sm">
         <div className="">
-          <p>
+          <p className="mb-2">
             Done with 💙 by{" "}
             <span className="text-blue-400 font-semibold">
               Bala Subramanian
             </span>{" "}
-            — <span className="italic">PSG4U</span>
+            — <span className="text-red-500 text-bold">PSG4U - </span>
+            <span className="border-b-2 border-b-red-400 text-black"> Still in development</span><span>‼️</span>
           </p>
+          <a
+            href="mailto:balasubramanian.s2000@gmail.com"
+            className="text-blue-400 hover:text-blue-600 transition"
+          >
+            📩 Need help? Contact me
+          </a>
         </div>
       </footer>
 

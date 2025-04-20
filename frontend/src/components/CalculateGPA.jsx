@@ -6,15 +6,59 @@ import {
   ArrowRightOnRectangleIcon,
   AcademicCapIcon,
 } from "@heroicons/react/24/solid";
-import { motion } from "framer-motion";
+import { AnimatePresence,motion } from "framer-motion";
 import bg from "../images/mainbg.jpg";
 
-// Sample data for courses
 const coursesPerSemester = {
-  1: ["Maths", "Physics", "Chemistry", "English", "C Programming"],
-  2: ["Mathematics II", "Electronics", "Data Structures", "Python", "EVS"],
-  3: ["DBMS", "OOP", "Computer Networks", "OS", "Linear Algebra"],
-  4: ["AI", "ML", "Web Development", "Cloud", "Data Science"],
+  1: [
+    { name: "Calculus", credit: 4 },
+    { name: "Electronics", credit: 3 },
+    { name: "Chemistry", credit: 3 },
+    { name: "CT", credit: 3 },
+    { name: "English", credit: 3 },
+    { name: "Python Lab", credit: 2 },
+    { name: "Engineering Practices", credit: 1 },
+    { name: "Basic Science Lab", credit: 2 },
+  ],
+  2: [
+    { name: "Transforms", credit: 4 },
+    { name: "COA", credit: 4 },
+    { name: "Material Science", credit: 3 },
+    { name: "Discrete Mathematics", credit: 3 },
+    { name: "Chemistry", credit: 2 },
+    { name: "C Lab", credit: 2 },
+    { name: "EG", credit: 2 },
+  ],
+  3: [
+    { name: "Linear Algebra", credit: 4 },
+    { name: "Probability", credit: 4 },
+    { name: "Data Structures", credit: 4 },
+    { name: "Software Engineering", credit: 3 },
+    { name: "PPL", credit: 4 },
+    { name: "Economics", credit: 3 },
+    { name: "DS Lab", credit: 2 },
+    { name: "Java Lab", credit: 2 },
+    { name: "English", credit: 2 },
+  ],
+  4: [
+    { name: "Optimization Techniques", credit: 3 },
+    { name: "DAA", credit: 3 },
+    { name: "Operating Systems", credit: 4 },
+    { name: "Machine Learning - I", credit: 3 },
+    { name: "Database Systems", credit: 3 },
+    { name: "ML Lab", credit: 2 },
+    { name: "DBS Lab", credit: 2 },
+    { name: "English", credit: 1 },
+  ],
+  5: [
+    { name: "Artificial Intelligence", credit: 4 },
+    { name: "Deep Learning", credit: 3 },
+    { name: "Computer Networks", credit: 4 },
+    { name: "Machine Learning - II", credit: 4 },
+    { name: "Design Thinking", credit: 3 },
+    { name: "Deep Learning Lab", credit: 2 },
+    { name: "App Dev Lab", credit: 2 },
+  ],
 };
 
 export const CalculateGPA = () => {
@@ -30,12 +74,14 @@ export const CalculateGPA = () => {
     const selectedCourses = coursesPerSemester[semester] || [];
     setCourses(selectedCourses);
 
-    // Initializes grades with default 5
     const initialGrades = {};
     selectedCourses.forEach((course) => {
-      initialGrades[course] = 5;
+      initialGrades[course.name] = 5;
     });
     setGrades(initialGrades);
+
+    // Reset GPA when semester changes
+    setGpa(null);
   }, [semester]);
 
   const handleGradeChange = (course, value) => {
@@ -44,18 +90,25 @@ export const CalculateGPA = () => {
   };
 
   const calculateGPA = () => {
-    const gradeValues = Object.values(grades);
-    const total = gradeValues.reduce((sum, val) => sum + val, 0);
-    const average = gradeValues.length
-      ? (total / gradeValues.length).toFixed(2)
-      : 0;
-    setGpa(average);
+    const selectedCourses = coursesPerSemester[semester] || [];
+    let totalCredits = 0;
+    let weightedSum = 0;
+
+    selectedCourses.forEach((course) => {
+      const grade = grades[course.name] || 0;
+      weightedSum += grade * course.credit;
+      totalCredits += course.credit;
+    });
+
+    const gpa = totalCredits > 0 ? (weightedSum / totalCredits).toFixed(2) : 0;
+    setGpa(gpa);
     setPrediction(null);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const [strategyInputs, setStrategyInputs] = useState({
-    ca1_marks: [25, 30, 27, 20, 28],
+    selected_semester: 1,
+    ca1_marks: coursesPerSemester[1].map(() => 25),
     current_cgpa: 7.0,
     expected_cgpa: 8.0,
   });
@@ -64,7 +117,7 @@ export const CalculateGPA = () => {
 
   const handlePrediction = async () => {
     setGpa(null); // Hides the GPA result box
-    const res = await fetch("http://localhost:8000/psg4u/predict/", {
+    const res = await fetch("https://psg4u.onrender.com/psg4u/predict/", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(strategyInputs),
@@ -141,22 +194,22 @@ export const CalculateGPA = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
             className="mb-8"
-            >
+          >
             <label className="text-sm text-gray-600 font-medium mb-1 block">
-                Select Semester
+              Select Semester
             </label>
             <select
-                value={semester}
-                onChange={(e) => setSemester(Number(e.target.value))}
-                className="w-full border border-gray-300 p-3 rounded-lg focus:ring-2 focus:ring-indigo-400"
+              value={semester}
+              onChange={(e) => setSemester(Number(e.target.value))}
+              className="w-full border border-gray-300 p-3 rounded-lg focus:ring-2 focus:ring-indigo-400"
             >
-                {[1, 2, 3, 4].map((sem) => (
+              {[1, 2, 3, 4].map((sem) => (
                 <option key={sem} value={sem}>
-                    Semester {sem}
+                  Semester {sem}
                 </option>
-                ))}
+              ))}
             </select>
-            </motion.div>
+          </motion.div>
           {/* Courses */}
           <div className="grid gap-6">
             {courses.map((course, idx) => (
@@ -170,7 +223,7 @@ export const CalculateGPA = () => {
                 <div className="flex items-center gap-4 w-full">
                   <AcademicCapIcon className="w-7 h-7 text-indigo-500" />
                   <span className="font-medium text-gray-700 w-1/3">
-                    {course}
+                    {course.name} ({course.credit} credits)
                   </span>
 
                   <input
@@ -178,15 +231,20 @@ export const CalculateGPA = () => {
                     min={5}
                     max={10}
                     step={1}
-                    value={grades[course] || 5}
-                    onChange={(e) => handleGradeChange(course, e.target.value)}
+                    value={grades[course.name] || 5}
+                    onChange={(e) =>
+                      handleGradeChange(course.name, e.target.value)
+                    }
                     className="border border-gray-300 rounded-lg p-1 w-12 text-center focus:ring-2 ring-indigo-300"
                   />
                   <div className="w-1/2 ml-10">
                     <GradientSlider
-                      value={grades[course] || 5}
+                      value={grades[course.name] || 5}
                       onChange={(e) =>
-                        handleGradeChange(course, parseFloat(e.target.value))
+                        handleGradeChange(
+                          course.name,
+                          parseFloat(e.target.value)
+                        )
                       }
                     />
                   </div>
@@ -201,9 +259,9 @@ export const CalculateGPA = () => {
             whileTap={{ scale: 0.95 }}
             onClick={calculateGPA}
             className="mt-14 mx-auto bg-indigo-600 hover:bg-indigo-700 text-white py-3 px-6 rounded-lg font-semibold transition duration-300 block w-fit"
-            >
+          >
             Calculate GPA
-            </motion.button>
+          </motion.button>
         </motion.div>
 
         {/* GPA Result Box */}
@@ -237,13 +295,21 @@ export const CalculateGPA = () => {
             </motion.button>
           </motion.div>
         )}
+        <AnimatePresence>
         {prediction && (
           <motion.div
             initial={{ x: 100, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             transition={{ type: "spring", stiffness: 100 }}
-            className="w-full lg:w-1/2 h-[500px] bg-white border border-blue-200 rounded-2xl p-6 shadow-xl text-blue-900"
+            className="flex-[1.5] min-w-[300px] max-w-[600px] max-h-[600px] bg-white border border-blue-200 rounded-2xl p-6 shadow-xl text-blue-900 overflow-y-auto scrollbar-hide relative"
           >
+            {/* Close Button */}
+            <button
+              onClick={() => setPrediction(false)}
+              className="absolute top-4 right-4 bg-red-500 hover:bg-red-600 text-white p-1 rounded-full"
+            >
+              <XMarkIcon className="w-5 h-5" />
+            </button>
             <h2 className="text-2xl font-bold mb-5 flex items-center gap-2">
               📊 Predicted Performance
             </h2>
@@ -261,7 +327,8 @@ export const CalculateGPA = () => {
                     }`}
                   >
                     <h3 className="text-md font-semibold mb-2">
-                      Subject {i + 1}
+                      {coursesPerSemester[strategyInputs.selected_semester][i]
+                        ?.name || `Subject ${i + 1}`}
                     </h3>
                     <p className="text-sm">
                       <span className="font-medium">CA2 Marks:</span>{" "}
@@ -281,17 +348,24 @@ export const CalculateGPA = () => {
             </div>
           </motion.div>
         )}
+        </AnimatePresence>
       </div>
 
-      {/* Strategy Modal */}
       {showStrategyModal && (
         <motion.div
-          initial={{ scale: 0.8, opacity: 0 }}
+          initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0.8, opacity: 0 }}
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+          exit={{ scale: 0.9, opacity: 0 }}
+          className="fixed inset-0 bg-black bg-opacity-40 backdrop-blur-sm flex items-center justify-center z-50 px-4 "
         >
-          <div className="bg-white w-full max-w-xl p-6 rounded-3xl shadow-2xl relative">
+          <div
+            className="bg-white w-full max-w-2xl max-h-[90vh] scrollbar-hide overflow-y-auto p-6 rounded-3xl shadow-2xl relative"
+            style={{
+              WebkitOverflowScrolling: "touch",
+              scrollBehavior: "smooth",
+            }}
+          >
+            {/* Close Button */}
             <button
               onClick={() => setShowStrategyModal(false)}
               className="absolute top-4 right-4 bg-red-500 hover:bg-red-600 text-white p-1 rounded-full"
@@ -299,33 +373,103 @@ export const CalculateGPA = () => {
               <XMarkIcon className="w-5 h-5" />
             </button>
 
+            {/* Title */}
             <h2 className="text-2xl font-bold text-indigo-700 mb-6 flex items-center gap-2">
               <AcademicCapIcon className="w-7 h-7" />
               Build Your Grade Strategy
             </h2>
 
-            {[0, 1, 2, 3, 4].map((i) => (
-              <div key={i} className="mb-4">
-                <label className="block text-gray-600 font-medium mb-1">
-                  Subject {i + 1} - CA1 Marks
-                </label>
-                <GradientSlider
-                  value={strategyInputs.ca1_marks[i] || 5}
-                  onChange={(e) =>
-                    setStrategyInputs((prev) => {
-                      const newMarks = [...prev.ca1_marks];
-                      newMarks[i] = parseFloat(e.target.value);
-                      return { ...prev, ca1_marks: newMarks };
-                    })
-                  }
-                  min={0}
-                  max={50}
-                  step={1}
-                />
-              </div>
-            ))}
+            {/* Semester Selector */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Select Semester
+              </label>
+              <select
+                value={strategyInputs.selected_semester || 1}
+                onChange={(e) =>
+                  setStrategyInputs((prev) => ({
+                    ...prev,
+                    selected_semester: parseInt(e.target.value),
+                    ca1_marks: coursesPerSemester[parseInt(e.target.value)].map(
+                      () => 25
+                    ),
+                  }))
+                }
+                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+              >
+                {Object.keys(coursesPerSemester).map((sem) => (
+                  <option key={sem} value={sem}>
+                    Semester {sem}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-            <div className="grid grid-cols-2 gap-4 mt-4">
+            {/* Sliders */}
+            <div className="space-y-8">
+              {coursesPerSemester[strategyInputs.selected_semester || 1]?.map(
+                (subject, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center justify-between gap-4"
+                  >
+                    {/* Subject Name */}
+                    <div className="text-gray-800 font-medium w-1/2">
+                      {subject.name}
+                    </div>
+
+                    {/* Slider + Value Display */}
+                    <div className="relative w-1/2">
+                      {/* Live Value on Top */}
+                      <div className="absolute top-1 -left-10 transform -translate-x-1/2 bg-indigo-100 text-indigo-700 text-xs px-2 py-1 rounded-full shadow-sm font-semibold">
+                        {strategyInputs.ca1_marks[i] || 0}
+                      </div>
+
+                      {/* Slider */}
+                      <input
+                        type="range"
+                        value={strategyInputs.ca1_marks[i] || 0}
+                        onInput={(e) => {
+                          const updatedMarks = [...strategyInputs.ca1_marks];
+                          updatedMarks[i] = parseFloat(e.target.value);
+                          setStrategyInputs((prev) => ({
+                            ...prev,
+                            ca1_marks: updatedMarks,
+                          }));
+                        }}
+                        min={0}
+                        max={50}
+                        step={1}
+                        className="w-full appearance-none bg-gray-200 rounded-lg h-2 cursor-pointer
+                    [&::-webkit-slider-thumb]:appearance-none
+                    [&::-webkit-slider-thumb]:h-4
+                    [&::-webkit-slider-thumb]:w-4
+                    [&::-webkit-slider-thumb]:rounded-full
+                    [&::-webkit-slider-thumb]:bg-indigo-600
+                    [&::-webkit-slider-thumb]:border-2
+                    [&::-webkit-slider-thumb]:border-white
+                    [&::-webkit-slider-thumb]:shadow-md
+                    [&::-moz-range-thumb]:appearance-none
+                    [&::-moz-range-thumb]:h-4
+                    [&::-moz-range-thumb]:w-4
+                    [&::-moz-range-thumb]:rounded-full
+                    [&::-moz-range-thumb]:bg-indigo-600"
+                      />
+
+                      {/* Tick Marks */}
+                      <div className="flex justify-between text-[10px] text-gray-400 mt-1 px-1">
+                        {[0, 10, 20, 30, 40, 50].map((mark) => (
+                          <span key={mark}>{mark}</span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )
+              )}
+            </div>
+
+            {/* CGPA Inputs */}
+            <div className="grid grid-cols-2 gap-4 mt-10">
               <div>
                 <label className="block text-gray-600 font-medium mb-1">
                   Current CGPA
@@ -339,7 +483,7 @@ export const CalculateGPA = () => {
                       current_cgpa: parseFloat(e.target.value),
                     }))
                   }
-                  className="w-full p-2 border border-gray-300 rounded-lg"
+                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
                   step="0.1"
                   min={0}
                   max={10}
@@ -358,7 +502,7 @@ export const CalculateGPA = () => {
                       expected_cgpa: parseFloat(e.target.value),
                     }))
                   }
-                  className="w-full p-2 border border-gray-300 rounded-lg"
+                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
                   step="0.1"
                   min={0}
                   max={10}
@@ -366,34 +510,15 @@ export const CalculateGPA = () => {
               </div>
             </div>
 
+            {/* Predict Button */}
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.97 }}
               onClick={handlePrediction}
-              className="mt-6 w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg"
+              className="mt-10 w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg"
             >
               Predict My Grades
             </motion.button>
-
-            {prediction && (
-              <div className="mt-6 bg-blue-50 border border-blue-200 p-4 rounded-lg">
-                <h3 className="text-lg font-semibold text-indigo-600 mb-2">
-                  📈 Prediction Results
-                </h3>
-                {prediction.ca2_marks.map((mark, i) => (
-                  <div
-                    key={i}
-                    className="flex justify-between text-sm text-gray-700"
-                  >
-                    <span>Subject {i + 1}:</span>
-                    <span>
-                      CA2: {mark.toFixed(1)} | Semester:{" "}
-                      {prediction.semester_grades[i].toFixed(1)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
         </motion.div>
       )}
@@ -402,20 +527,17 @@ export const CalculateGPA = () => {
 };
 
 const GradientSlider = ({ value, onChange, min = 5, max = 10, step = 1 }) => {
-    return (
-      <div className="relative w-full">
-        <input
-          type="range"
-          value={value}
-          onChange={onChange}
-          min={min}
-          max={max}
-          step={step}
-          className="w-full cursor-pointer h-2 rounded-lg appearance-none bg-gradient-to-r from-red-600 via-yellow-500 to-green-600 focus:outline-none custom-slider"
-        />
-      </div>
-    );
-  };
-  
-  
-  
+  return (
+    <div className="relative w-full">
+      <input
+        type="range"
+        value={value}
+        onChange={onChange}
+        min={min}
+        max={max}
+        step={step}
+        className="w-full cursor-pointer h-2 rounded-lg appearance-none bg-gradient-to-r from-red-600 via-yellow-500 to-green-600 focus:outline-none custom-slider"
+      />
+    </div>
+  );
+};

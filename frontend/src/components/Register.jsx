@@ -23,7 +23,7 @@ function Register() {
     e.preventDefault();
     const { name, email, password } = formData;
 
-    const response = await fetch('http://localhost:8000/psg4u/register/', {
+    const response = await fetch('https://psg4u.onrender.com/psg4u/register/', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: "include",
@@ -46,7 +46,7 @@ function Register() {
     e.preventDefault();
     const { email, password } = formData;
   
-    const response = await fetch("http://localhost:8000/psg4u/login/", {
+    const response = await fetch("https://psg4u.onrender.com/psg4u/login/", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",

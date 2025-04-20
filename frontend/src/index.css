@@ -44,3 +44,11 @@ input[type="range"].custom-slider::-moz-range-thumb {
 input[type="range"].custom-slider::-moz-range-thumb:hover {
   transform: scale(1.1);
 }
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
