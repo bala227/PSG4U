@@ -133,10 +133,10 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",  # React app URL
+    "https://psg4u.vercel.app",  # React app URL
 ]
 CORS_ALLOW_CREDENTIALS = True
 
 AUTH_USER_MODEL = 'app.User'
 
-CSRF_TRUSTED_ORIGINS = ["http://localhost:3000"]
+CSRF_TRUSTED_ORIGINS = ["https://psg4u.vercel.app"]
