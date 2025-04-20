@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import './Login.css';
 import { useNavigate } from 'react-router-dom';
-import loadingAnimation from '../image/loading.json';
+import loadingAnimation from '../images/loading.json';
+import Lottie from 'react-lottie';
 
 function Register() {
   const [isSignUp, setIsSignUp] = useState(false);
