@@ -13,3 +13,4 @@ pandas
 scikit-learn
 python-dotenv
 requests
+beautifulsoup4
