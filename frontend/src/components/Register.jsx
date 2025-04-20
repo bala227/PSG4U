@@ -80,7 +80,15 @@ function Register() {
       setLoading(false); // Stop loading once the process is done
     }
   };
-
+ // Define Lottie animation options
+ const defaultOptions = {
+  loop: true,
+  autoplay: true, // Loop the animation
+  animationData: loadingAnimation, // Your Lottie animation JSON
+  rendererSettings: {
+    preserveAspectRatio: 'xMidYMid slice',
+  },
+};
   return (
     <div className="login-container">
       <div className="login-box">
