@@ -86,7 +86,24 @@ function Register() {
         {/* Show loading state */}
         {loading ? (
           <div className="loading-overlay">
-            <p>Loading... Please wait for the server to start.</p>
+            <div className="loading-content">
+              <h1>PSG4U 🎓</h1>
+              <p>Your fastest path to academic success!</p>
+              <div className="loading-info">
+                <h2>About PSG4U</h2>
+                <p>
+                  PSG4U is a full-stack educational platform built with React and Django, designed to help students manage their academic progress, predict grades using machine learning, and suggest learning resources.
+                </p>
+                <h3>Key Features:</h3>
+                <ul>
+                  <li>🔐 Authentication (User Registration & Login)</li>
+                  <li>📚 Suggest Educational Resources</li>
+                  <li>🎓 GPA Calculator</li>
+                  <li>🧠 Predict Grades using ML Models</li>
+                </ul>
+                <p>We are currently connecting you to our servers...</p>
+              </div>
+            </div>
           </div>
         ) : (
           <>
