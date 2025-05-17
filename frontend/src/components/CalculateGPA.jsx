@@ -6,8 +6,9 @@ import {
   ArrowRightOnRectangleIcon,
   AcademicCapIcon,
 } from "@heroicons/react/24/solid";
-import { AnimatePresence,motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import bg from "../images/mainbg.jpg";
+import GPAChart from "../components/GPAChart.jsx";
 
 const coursesPerSemester = {
   1: [
@@ -28,6 +29,7 @@ const coursesPerSemester = {
     { name: "Chemistry", credit: 2 },
     { name: "C Lab", credit: 2 },
     { name: "EG", credit: 2 },
+    { name: "English", credit: 2 },
   ],
   3: [
     { name: "Linear Algebra", credit: 4 },
@@ -39,6 +41,7 @@ const coursesPerSemester = {
     { name: "DS Lab", credit: 2 },
     { name: "Java Lab", credit: 2 },
     { name: "English", credit: 2 },
+    { name: "Tamil", credit: 1 },
   ],
   4: [
     { name: "Optimization Techniques", credit: 3 },
@@ -49,6 +52,7 @@ const coursesPerSemester = {
     { name: "ML Lab", credit: 2 },
     { name: "DBS Lab", credit: 2 },
     { name: "English", credit: 1 },
+    { name: "Tamil", credit: 1 },
   ],
   5: [
     { name: "Artificial Intelligence", credit: 4 },
@@ -58,17 +62,96 @@ const coursesPerSemester = {
     { name: "Design Thinking", credit: 3 },
     { name: "Deep Learning Lab", credit: 2 },
     { name: "App Dev Lab", credit: 2 },
+    { name: "English", credit: 1 },
+  ],
+  6: [
+    { name: "Parallel and Distributed Computing", credit: 4 },
+    { name: "Natural Language Processing", credit: 3 },
+    { name: "Data Privacy and Security", credit: 3 },
+    { name: "Big Data", credit: 3 },
+    { name: "Cloud Computing", credit: 3 },
+    { name: "Innovation Practices", credit: 2 },
+    { name: "Big Data Laboratory", credit: 2 },
+    { name: "English", credit: 1 },
   ],
 };
 
 export const CalculateGPA = () => {
   const [semester, setSemester] = useState(1);
+  const [cgpa, setcgpa] = useState(0);
+  const [rollno, setrollno] = useState("");
+  const [currentSemester, setCurrentSemester] = useState(null);
   const [courses, setCourses] = useState([]);
   const [grades, setGrades] = useState({});
   const [gpa, setGpa] = useState(null);
   const [showStrategyModal, setShowStrategyModal] = useState(false);
+  const [gpaData, setGpaData] = useState(null);
+  const [strategyInputs, setStrategyInputs] = useState({
+    selected_semester: 1,
+    ca1_marks: coursesPerSemester[1].map(() => 25),
+    current_cgpa: cgpa,
+    expected_cgpa: 9.0,
+  });
 
-  const user = JSON.parse(localStorage.getItem("user"));
+  const [prediction, setPrediction] = useState(null);
+
+  useEffect(() => {
+    // Fetch GPA data for the given rollno
+    fetch("http://127.0.0.1:8000/psg4u/get-user-gpa/", {
+      method: "GET",
+      credentials: "include", // <--- this is important for Django sessions!
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        console.log(data);
+        setGpaData(data);
+      })
+      .catch((error) => {
+        console.error("Error fetching GPA data:", error);
+      });
+  }, [rollno]);
+
+  useEffect(() => {
+    fetch("http://127.0.0.1:8000/psg4u/calculate-cgpa/", {
+      method: "GET",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.cgpa) {
+          setcgpa(data.cgpa); // Update the CGPA state
+          setStrategyInputs((prev) => ({
+            ...prev,
+            current_cgpa: cgpa, // Default to current semester
+          }));
+        } else {
+          console.error("Error fetching CGPA");
+        }
+      })
+      .catch((err) => {
+        console.error("Failed to fetch CGPA: " + err.message);
+      });
+    // Fetch the user details to get the current semester
+    fetch("http://127.0.0.1:8000/psg4u/me/", {
+      method: "GET",
+      credentials: "include",
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error("Not logged in");
+        return res.json();
+      })
+      .then((data) => {
+        setrollno(data.rollno);
+        setCurrentSemester(data.semester);
+        setSemester(data.semester);
+      })
+      .catch((err) => {
+        console.error("Failed to fetch user:", err);
+      });
+  }, []);
 
   useEffect(() => {
     const selectedCourses = coursesPerSemester[semester] || [];
@@ -106,18 +189,86 @@ export const CalculateGPA = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const [strategyInputs, setStrategyInputs] = useState({
-    selected_semester: 1,
-    ca1_marks: coursesPerSemester[1].map(() => 25),
-    current_cgpa: 7.0,
-    expected_cgpa: 8.0,
-  });
+  const storeGPA = () => {
+    const selectedCourses = coursesPerSemester[semester] || [];
+    let totalCredits = 0;
+    let weightedSum = 0;
 
-  const [prediction, setPrediction] = useState(null);
+    selectedCourses.forEach((course) => {
+      const grade = grades[course.name] || 0;
+      weightedSum += grade * course.credit;
+      totalCredits += course.credit;
+    });
+
+    const gpaValue =
+      totalCredits > 0 ? (weightedSum / totalCredits).toFixed(2) : 0;
+    setGpa(gpaValue);
+    setPrediction(null);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+
+    if (gpaValue && semester) {
+      // Store GPA
+      fetch("http://127.0.0.1:8000/psg4u/store-gpa/", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          // Include CSRF token or auth headers if needed
+        },
+        body: JSON.stringify({
+          gpa: gpaValue,
+          semester_number: semester,
+        }),
+      })
+        .then((res) =>
+          res.json().then((data) => ({ status: res.status, data }))
+        )
+        .then(({ status, data }) => {
+          if (status === 200) {
+            alert("GPA saved: " + data.message);
+          } else {
+            alert("GPA error: " + data.error);
+          }
+        })
+        .catch((err) => {
+          alert("GPA request failed: " + err.message);
+        });
+
+      // Store total credits and points
+      fetch("http://127.0.0.1:8000/psg4u/store-credits/", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          semester: semester,
+          total_points: weightedSum,
+          total_credits: totalCredits,
+        }),
+      })
+        .then((res) =>
+          res.json().then((data) => ({ status: res.status, data }))
+        )
+        .then(({ status, data }) => {
+          if (status === 200) {
+            console.log("Credits info stored successfully!");
+
+            // Refresh the page after storing credits successfully
+            window.location.reload();
+          } else {
+            console.error("Credits error:", data.error);
+          }
+        })
+        .catch((err) => {
+          console.error("Credits request failed:", err.message);
+        });
+    }
+  };
 
   const handlePrediction = async () => {
     setGpa(null); // Hides the GPA result box
-    const res = await fetch("https://psg4u.onrender.com/psg4u/predict/", {
+    const res = await fetch("http://127.0.0.1:8000/psg4u/predict/", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(strategyInputs),
@@ -200,12 +351,12 @@ export const CalculateGPA = () => {
             </label>
             <select
               value={semester}
-              onChange={(e) => setSemester(Number(e.target.value))}
+              onChange={(e) => setSemester(e.target.value)}
               className="w-full border border-gray-300 p-3 rounded-lg focus:ring-2 focus:ring-indigo-400"
             >
-              {[1, 2, 3, 4].map((sem) => (
-                <option key={sem} value={sem}>
-                  Semester {sem}
+              {Array.from({ length: currentSemester }, (_, i) => (
+                <option key={i + 1} value={i + 1}>
+                  Semester {i + 1}
                 </option>
               ))}
             </select>
@@ -254,16 +405,25 @@ export const CalculateGPA = () => {
           </div>
 
           {/* Calculate GPA Button */}
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={calculateGPA}
-            className="mt-14 mx-auto bg-indigo-600 hover:bg-indigo-700 text-white py-3 px-6 rounded-lg font-semibold transition duration-300 block w-fit"
-          >
-            Calculate GPA
-          </motion.button>
+          <div className="flex">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={calculateGPA}
+              className="mt-14 mx-auto bg-indigo-600 hover:bg-indigo-700 text-white py-3 px-6 rounded-lg font-semibold transition duration-300 block w-fit"
+            >
+              Calculate GPA
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={storeGPA}
+              className="mt-14 mx-auto bg-green-600 border border-green-300 text-white py-3 px-6 rounded-lg font-semibold transition duration-300 block w-fit"
+            >
+              Calculate and Store GPA
+            </motion.button>
+          </div>
         </motion.div>
-
         {/* GPA Result Box */}
         {gpa && (
           <motion.div
@@ -296,60 +456,146 @@ export const CalculateGPA = () => {
           </motion.div>
         )}
         <AnimatePresence>
-        {prediction && (
-          <motion.div
-            initial={{ x: 100, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            transition={{ type: "spring", stiffness: 100 }}
-            className="flex-[1.5] min-w-[300px] max-w-[600px] max-h-[600px] bg-white border border-blue-200 rounded-2xl p-6 shadow-xl text-blue-900 overflow-y-auto scrollbar-hide relative"
-          >
-            {/* Close Button */}
-            <button
-              onClick={() => setPrediction(false)}
-              className="absolute top-4 right-4 bg-red-500 hover:bg-red-600 text-white p-1 rounded-full"
+          {prediction && (
+            <motion.div
+              initial={{ x: 100, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ type: "spring", stiffness: 100 }}
+              className="flex-[1.5] min-w-[300px] max-w-[600px] max-h-[600px] bg-white border border-blue-200 rounded-2xl p-6 shadow-xl text-blue-900 overflow-y-auto scrollbar-hide relative"
             >
-              <XMarkIcon className="w-5 h-5" />
-            </button>
-            <h2 className="text-2xl font-bold mb-5 flex items-center gap-2">
-              📊 Predicted Performance
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {prediction.ca2_marks.map((mark, i) => {
-                const isLastOdd =
-                  prediction.ca2_marks.length % 2 === 1 &&
-                  i === prediction.ca2_marks.length - 1;
+              {/* Close Button */}
+              <button
+                onClick={() => setPrediction(false)}
+                className="absolute top-4 right-4 bg-red-500 hover:bg-red-600 text-white p-1 rounded-full"
+              >
+                <XMarkIcon className="w-5 h-5" />
+              </button>
+              <h2 className="text-2xl font-bold mb-5 flex items-center gap-2">
+                📊 Predicted Performance
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {prediction.ca2_marks.map((mark, i) => {
+                  const isLastOdd =
+                    prediction.ca2_marks.length % 2 === 1 &&
+                    i === prediction.ca2_marks.length - 1;
 
-                return (
-                  <div
-                    key={i}
-                    className={`bg-blue-50 border border-blue-200 rounded-xl p-4 shadow-sm ${
-                      isLastOdd ? "sm:col-span-2 sm:mx-auto sm:w-1/2" : ""
-                    }`}
-                  >
-                    <h3 className="text-md font-semibold mb-2">
-                      {coursesPerSemester[strategyInputs.selected_semester][i]
-                        ?.name || `Subject ${i + 1}`}
-                    </h3>
-                    <p className="text-sm">
-                      <span className="font-medium">CA2 Marks:</span>{" "}
-                      <span className="text-blue-700 font-bold">
-                        {mark.toFixed(1)}
-                      </span>
-                    </p>
-                    <p className="text-sm mt-1">
-                      <span className="font-medium">Semester Grade:</span>{" "}
-                      <span className="text-green-600 font-bold">
-                        {prediction.semester_grades[i].toFixed(1)}
-                      </span>
-                    </p>
-                  </div>
-                );
-              })}
-            </div>
-          </motion.div>
-        )}
+                  return (
+                    <div
+                      key={i}
+                      className={`bg-blue-50 border border-blue-200 rounded-xl p-4 shadow-sm ${
+                        isLastOdd ? "sm:col-span-2 sm:mx-auto sm:w-1/2" : ""
+                      }`}
+                    >
+                      <h3 className="text-md font-semibold mb-2">
+                        {coursesPerSemester[strategyInputs.selected_semester][i]
+                          ?.name || `Subject ${i + 1}`}
+                      </h3>
+                      <p className="text-sm">
+                        <span className="font-medium">CA2 Marks:</span>{" "}
+                        <span className="text-blue-700 font-bold">
+                          {mark.toFixed(1)}
+                        </span>
+                      </p>
+                      <p className="text-sm mt-1">
+                        <span className="font-medium">Semester Grade:</span>{" "}
+                        <span className="text-green-600 font-bold">
+                          {prediction.semester_grades[i].toFixed(1)}
+                        </span>
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+            </motion.div>
+          )}
         </AnimatePresence>
       </div>
+      <AnimatePresence>
+        <section className="relative z-10 mt-20 pb-14 px-6 md:px-10 text-white">
+          <div className="max-w-7xl mx-auto flex flex-col lg:flex-row justify-between items-start gap-10">
+            {/* Left: GPA Cards Box */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+              className="flex-1 bg-gradient-to-br from-[#fefefe] to-[#d8e9ff] text-gray-900 backdrop-blur-xl rounded-2xl shadow-2xl p-8 w-full"
+            >
+              <motion.h2
+                initial={{ opacity: 0, y: -30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6 }}
+                className="text-2xl font-extrabold text-center mb-10 text-gray-600"
+              >
+                🎓 Your Semester-wise GPA
+              </motion.h2>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
+                {gpaData ? (
+                  Array.from({ length: 8 }).map((_, i) => {
+                    const key = `gpa_sem${i + 1}`;
+                    const gpa = i + 1 <= currentSemester ? gpaData[key] : null;
+
+                    return (
+                      <motion.div
+                        key={key}
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 0.3, delay: i * 0.08 }}
+                        className={`rounded-lg p-6 text-center shadow-md ${
+                          gpa !== null ? "bg-white" : "bg-gray-200"
+                        }`}
+                      >
+                        <h4 className="text-lg font-semibold text-gray-700 mb-1">
+                          Semester {i + 1}
+                        </h4>
+                        <p
+                          className={`text-xl font-bold ${
+                            gpa !== null
+                              ? "text-blue-600"
+                              : "text-gray-400 text-sm"
+                          }`}
+                        >
+                          {gpa !== null ? gpa.toFixed(2) : "-"}
+                        </p>
+                      </motion.div>
+                    );
+                  })
+                ) : (
+                  <div className="col-span-4 text-center text-gray-600 py-6">
+                    Fetching GPA data...
+                  </div>
+                )}
+              </div>
+            </motion.div>
+
+            {gpaData && (
+              <motion.div
+                initial={{ x: 100, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{ type: "spring", stiffness: 100 }}
+                className="w-full lg:w-1/4 bg-green-100 border border-green-300 rounded-xl p-6 text-green-800 shadow-xl h-fit self-start text-center"
+              >
+                <h2 className="text-xl font-bold mb-3 text-green-900">
+                  📊 Cumulative GPA
+                </h2>
+                <p className="text-md">
+                  Upto{" "}
+                  <span className="font-semibold">
+                    {currentSemester} Semesters
+                  </span>
+                </p>
+                <p className="text-4xl font-extrabold mt-3 text-green-900">
+                  {cgpa}
+                </p>
+              </motion.div>
+            )}
+          </div>
+        </section>
+      </AnimatePresence>
+      <GPAChart gpaData={gpaData} currentSemester={currentSemester} />
 
       {showStrategyModal && (
         <motion.div
@@ -359,7 +605,7 @@ export const CalculateGPA = () => {
           className="fixed inset-0 bg-black bg-opacity-40 backdrop-blur-sm flex items-center justify-center z-50 px-4 "
         >
           <div
-            className="bg-white w-full max-w-2xl max-h-[90vh] scrollbar-hide overflow-y-auto p-6 rounded-3xl shadow-2xl relative"
+            className="bg-white w-full max-w-3xl max-h-[90vh] scrollbar-hide overflow-y-auto p-6 rounded-3xl shadow-2xl relative"
             style={{
               WebkitOverflowScrolling: "touch",
               scrollBehavior: "smooth",

@@ -3,9 +3,7 @@
     background: white;
   }
   .homebody{
-      background-image: url('../images/Home_bg.jpeg');
-      background-size: cover;
-      background-repeat: no-repeat;
+
       width: 100vw;
       height: 100vh;
       margin-bottom: 0;

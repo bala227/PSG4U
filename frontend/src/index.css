@@ -52,3 +52,12 @@ input[type="range"].custom-slider::-moz-range-thumb:hover {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* Add in your global CSS or Tailwind config */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}

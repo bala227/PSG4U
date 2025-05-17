@@ -9,7 +9,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.contrib.auth.models import User
 from django.contrib.auth.hashers import make_password
-from .models import User,SuggestedResource
+from .models import User,SuggestedResource,UserGPA,SemesterGPA
 from rest_framework import status
 from rest_framework.decorators import api_view
 from django.contrib.auth.decorators import login_required  # ✅ correct
@@ -19,16 +19,148 @@ from sklearn.linear_model import LinearRegression
 from django.db import connection
 from .serializers import UserSerializer
 from rest_framework.response import Response
-from relevance_checker import fetch_page_content, get_relevance_score
+from relevance_checker import fetch_page_content, get_relevance_score, summarize_text, clean_and_summarize
+
+from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse
+from .models import SemesterGPA
+@login_required
+def calculate_cgpa(request):
+    user = request.user
+    
+    current_semester = user.semester_number
+    semester_data = SemesterGPA.objects.filter(user=user, semester__lte=current_semester)
+
+    total_points = 0
+    total_credits = 0
+
+    for record in semester_data:
+        total_points += record.total_points
+        total_credits += record.total_credits
+
+    if total_credits:
+        cgpa = round(total_points / total_credits, 2)
+    else:
+        cgpa = '-'
+
+    return JsonResponse({'cgpa': cgpa})
+
+
+@csrf_exempt  # For testing purposes, remove for production
+@login_required
+def store_credits(request):
+    if request.method == 'POST':
+        try:
+            # Load the incoming JSON data
+            data = json.loads(request.body)
+
+            semester = int(data.get('semester'))
+            total_points = float(data.get('total_points'))
+            total_credits = float(data.get('total_credits'))
+
+
+            # Validate that data is not zero or invalid
+            if total_credits <= 0 or total_points < 0:
+                return JsonResponse({'error': 'Invalid data: points and credits must be positive'}, status=400)
+
+            # Check if the semester is valid (assuming 1-8 semesters)
+            if semester < 1 or semester > 8:
+                return JsonResponse({'error': 'Invalid semester number'}, status=400)
+
+            # Get the logged-in user
+            user = request.user
+
+            # Store or update credits data
+            credits_record, created = SemesterGPA.objects.get_or_create(user=user, semester=semester)
+
+            # Ensure the fields are set correctly (to avoid null issues)
+            credits_record.total_points = total_points
+            credits_record.total_credits = total_credits
+            credits_record.save()
+
+            return JsonResponse({'message': f'Credits for Semester {semester} stored successfully!'})
+
+        except Exception as e:
+            print(f"Error: {str(e)}")  # Debugging line to catch and print any errors
+            return JsonResponse({'error': str(e)}, status=500)
+
+    return JsonResponse({'error': 'Invalid request method'}, status=405)
+
+
+@login_required
+def get_user_gpa(request):
+    try:
+        user = request.user
+        user_gpa = UserGPA.objects.get(user=user)
+
+        gpa_data = {
+            'user': user.rollno,  # use username unless you’ve added a rollno field to User
+            'gpa_sem1': user_gpa.gpa_sem1,
+            'gpa_sem2': user_gpa.gpa_sem2,
+            'gpa_sem3': user_gpa.gpa_sem3,
+            'gpa_sem4': user_gpa.gpa_sem4,
+            'gpa_sem5': user_gpa.gpa_sem5,
+            'gpa_sem6': user_gpa.gpa_sem6,
+            'gpa_sem7': user_gpa.gpa_sem7,
+            'gpa_sem8': user_gpa.gpa_sem8,
+        }
+
+        return JsonResponse(gpa_data)
+
+    except UserGPA.DoesNotExist:
+        return JsonResponse({'error': 'GPA data not found for this user'}, status=404)
+
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+@csrf_exempt
+@login_required
+def store_gpa(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            semester_number = int(data.get('semester_number'))
+            gpa = float(data.get('gpa'))
+
+            if semester_number < 1 or semester_number > 8:
+                return JsonResponse({'error': 'Invalid semester number'}, status=400)
+
+            user = request.user
+            user_gpa, created = UserGPA.objects.get_or_create(user=user)
+
+            # Dynamically set gpa_semX field
+            setattr(user_gpa, f'gpa_sem{semester_number}', gpa)
+            user_gpa.save()
+
+            return JsonResponse({'message': f'GPA for Semester {semester_number} stored successfully.'})
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+
+    return JsonResponse({'error': 'Invalid request method'}, status=405)
+
+@csrf_exempt
+@login_required
+def update_semester(request):
+    if request.method == "PATCH":
+        data = json.loads(request.body)
+        semester = data.get("semester")
+        if semester and 1 <= int(semester) <= 8:
+            request.user.semester_number = semester
+            request.user.save()
+            return JsonResponse({"message": "Semester updated."})
+        return JsonResponse({"error": "Invalid semester"}, status=400)
+    return JsonResponse({"error": "Invalid request"}, status=405)
+
 
 @login_required
 def current_user(request):
     user = request.user
     return JsonResponse({
         'rollno': user.rollno,
+        'name': user.name,
         'points': user.points,
         'semester': user.semester_number
-})
+    })
 
 @api_view(['GET'])
 def all_users(request):
@@ -40,18 +172,23 @@ def all_users(request):
 def list_resources(request):
     resources = SuggestedResource.objects.all().order_by("-added_at")
     data = [
-        {"subject": r.subject, "link": r.link, "score": r.relevance_score}
+        {
+            "subject": r.subject,
+            "link": r.link,
+            "score": r.relevance_score,
+            "summary": r.summary  # ✅ Return the summary
+        }
         for r in resources
     ]
     return Response(data)
+
 
 @api_view(["POST"])
 def suggest_resource(request):
     subject = request.data.get("subject")
     link = request.data.get("link")
-    rollno = request.data.get("rollno")  # Get roll number from the authenticated user
+    rollno = request.data.get("rollno")
 
-    # 🔒 Validate input
     if not subject or not link:
         return Response({
             "status": "rejected",
@@ -59,34 +196,43 @@ def suggest_resource(request):
         }, status=400)
 
     try:
-        # 🧠 Fetch and score
         content = fetch_page_content(link)
         relevance = get_relevance_score(subject, content)
 
-        if relevance > 0.3:
+        # 📄 Generate summary (You can implement this with transformers or other libraries)
+        summary = clean_and_summarize(content,subject)
+
+        points_awarded = (
+            20 if relevance > 0.8 else
+            15 if relevance > 0.6 else
+            10 if relevance > 0.4 else
+            5 if relevance > 0.2 else 0
+        )
+
+        if points_awarded > 0:
             SuggestedResource.objects.create(
                 subject=subject,
                 link=link,
-                relevance_score=relevance
+                relevance_score=relevance,
+                summary=summary  # ✅ Save summary
             )
 
-            # 🔁 Update points
             user = User.objects.get(rollno=rollno)
-            user.points += 10
+            user.points += points_awarded
             user.save()
 
             return Response({
                 "status": "accepted",
                 "relevance": relevance,
-                "points_awarded": 10
+                "points_awarded": points_awarded,
+                "summary": summary
             })
 
-        else:
-            return Response({
-                "status": "rejected",
-                "reason": "Not relevant",
-                "relevance": relevance
-            })
+        return Response({
+            "status": "rejected",
+            "reason": "Not relevant",
+            "relevance": relevance
+        })
 
     except Exception as e:
         return Response({
@@ -94,6 +240,8 @@ def suggest_resource(request):
             "message": "Something went wrong while processing the resource.",
             "details": str(e)
         }, status=500)
+
+
 data = pd.read_csv("grades_dataset.csv")
 
 
@@ -166,17 +314,24 @@ class SemesterGradesView(View):
         grades = semester_data.get(semester_number, [])
         return JsonResponse({'subjects': grades})
 
+@method_decorator(csrf_exempt, name='dispatch')
 class RegisterView(APIView):
     def post(self, request):
         roll_no = request.data.get('username')
         password = request.data.get('password')
+        name = request.data.get('name')
         semester = request.data.get('semester', 1)
         points = request.data.get('points', 0.0)
+
+        if not name:
+            return Response({"error": "Name is required"}, status=status.HTTP_400_BAD_REQUEST)
 
         if User.objects.filter(rollno=roll_no).exists():
             return Response({"error": "Roll number already exists"}, status=status.HTTP_400_BAD_REQUEST)
 
-        user = User.objects.create_user(rollno=roll_no, password=password, semester_number=semester, points=points)
+        user = User.objects.create_user(rollno=roll_no, name=name, password=password, semester_number=semester, points=points)
+        UserGPA.objects.create(user=user)
+
         return Response({"message": "User registered successfully"}, status=status.HTTP_201_CREATED)
     
 @method_decorator(csrf_exempt, name='dispatch')

@@ -4,22 +4,26 @@ import {
   HomeIcon,
   UserCircleIcon,
   XMarkIcon,
-  PencilSquareIcon,
   ArrowRightOnRectangleIcon,
   AcademicCapIcon,
   StarIcon,
 } from "@heroicons/react/24/solid";
 import { motion } from "framer-motion";
+import GitHubIcon from '@mui/icons-material/GitHub';
+import EmailIcon from '@mui/icons-material/Email';
+import LinkedInIcon from '@mui/icons-material/LinkedIn';
 import bg from "../images/mainbg.jpg";
 
 export const Main = () => {
   const [show, setShow] = useState(false);
   const [user, setUser] = useState(null);
   const [leaderboard, setLeaderboard] = useState([]);
+  const [editingSemester, setEditingSemester] = useState(false);
+  const [newSemester, setNewSemester] = useState(user?.semester || "");
 
   useEffect(() => {
     // Existing fetch for logged-in user
-    fetch("https://psg4u.onrender.com/psg4u/me/", {
+    fetch("http://127.0.0.1:8000/psg4u/me/", {
       method: "GET",
       credentials: "include",
     })
@@ -33,7 +37,7 @@ export const Main = () => {
       });
 
     // New fetch for leaderboard users
-    fetch("https://psg4u.onrender.com/psg4u/users/", {
+    fetch("http://127.0.0.1:8000/psg4u/users/", {
       method: "GET",
       credentials: "include",
     })
@@ -60,11 +64,42 @@ export const Main = () => {
       document.getElementById("sect").style.opacity = 1;
     }
   };
-  const MotionLink = motion(Link);
   const leaderboardRef = useRef(null);
 
   const scrollToLeaderboard = () => {
+    setShow(false); // Close modal
+    document.getElementById("sect").style.opacity = 1; // Reset main opacity
     leaderboardRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const handleSemesterUpdate = () => {
+    const semNum = parseInt(newSemester);
+
+    if (semNum < 1 || semNum > 8 || isNaN(semNum)) {
+      alert("Semester must be a number between 1 and 8");
+      return;
+    }
+
+    fetch("http://127.0.0.1:8000/psg4u/update-semester/", {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify({ semester: semNum }),
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to update semester");
+        return res.json();
+      })
+      .then((data) => {
+        setUser((prev) => ({ ...prev, semester: semNum }));
+        setEditingSemester(false);
+      })
+      .catch((err) => {
+        console.error("Error updating semester:", err);
+        alert("Failed to update semester.");
+      });
   };
 
   return (
@@ -76,7 +111,7 @@ export const Main = () => {
       {/* Overlay */}
       <div className="absolute inset-0 bg-gradient-to-br from-black/10 to-gray-800/20 z-0"></div>
 
-      <nav className="relative z-10 bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 px-10 py-4 shadow-md">
+      <nav className="fixed top-0 left-0 w-full z-50 bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 px-10 py-4 shadow-md">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           {/* Logo + Title */}
           <motion.div
@@ -140,7 +175,11 @@ export const Main = () => {
       {/* Main Section */}
       <section
         id="sect"
-        className="flex items-center justify-center p-10 relative z-10"
+        className={`flex items-center justify-center p-10 pt-28 relative z-10 transition-opacity duration-300 ${
+          show
+            ? "opacity-30 pointer-events-none"
+            : "opacity-100 pointer-events-auto"
+        }`}
       >
         <div className="max-w-6xl h-[500px] w-full grid grid-cols-1 md:grid-cols-2 gap-10 mt-10">
           {/* GPA Box */}
@@ -184,7 +223,9 @@ export const Main = () => {
       </section>
       <section
         ref={leaderboardRef}
-        className="relative z-10 mt-20 px-4 md:px-10"
+        className={`relative z-10 mt-20 px-4 md:px-10 ${
+          show ? "opacity-30" : "opacity-100"
+        } transition-opacity duration-300`}
       >
         <motion.h2
           initial={{ opacity: 0, y: -20 }}
@@ -205,12 +246,12 @@ export const Main = () => {
         >
           <div className="grid grid-cols-[1fr_2fr_1fr] text-gray-800 font-bold border-b pb-3 mb-3">
             <span>Rank</span>
-            <span>Email</span>
+            <span>Name</span>
             <span>Points</span>
           </div>
 
           {leaderboard.length > 0 ? (
-            leaderboard.slice(0,5).map((user, index) => (
+            leaderboard.slice(0, 5).map((user, index) => (
               <motion.div
                 key={user.rollno || index}
                 initial={{ opacity: 0, y: 10 }}
@@ -224,7 +265,7 @@ export const Main = () => {
                 }`}
               >
                 <span>#{index + 1}</span>
-                <span>{user.name || user.rollno}</span>
+                <span>{user.name}</span>
                 <span>{user.points}</span>
               </motion.div>
             ))
@@ -237,22 +278,56 @@ export const Main = () => {
       </section>
 
       {/* Footer */}
-      <footer className="bg-white mt-20 relative z-10 text-center py-5 text-gray-400 text-sm">
-        <div className="">
-          <p className="mb-2">
-            Done with 💙 by{" "}
-            <span className="text-blue-400 font-semibold">
-              Bala Subramanian
-            </span>{" "}
-            — <span className="text-red-500 text-bold">PSG4U - </span>
-            <span className="border-b-2 border-b-red-400 text-black"> Still in development</span><span>‼️</span>
-          </p>
-          <a
-            href="mailto:balasubramanian.s2000@gmail.com"
-            className="text-blue-400 hover:text-blue-600 transition"
-          >
-            📩 Need help? Contact me
-          </a>
+      <footer className="bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 mt-20 relative z-10 text-center py-4 text-gray-200">
+        <div className="max-w-7xl mx-auto px-4 gap-24 flex justify-center items-center">
+          {/* Left Section */}
+          <div className="flex flex-col items-center gap-3">
+            <p className="text-lg font-semibold text-white">
+              Done with 💙 by{" "}
+              <span className="text-blue-400 font-semibold">
+                Bala Subramanian
+              </span>
+            </p>
+            <div className="flex gap-4">
+              <a
+                href="https://github.com/bala227"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-gray-300 hover:text-blue-400 transition duration-200"
+              >
+                <GitHubIcon />
+              </a>
+
+              {/* LinkedIn Icon */}
+              <a
+                href="https://www.linkedin.com/in/bala-subramanian-s-3a95a8261/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-gray-300 hover:text-blue-400 transition duration-200"
+              >
+                <LinkedInIcon />
+              </a>
+
+              {/* Email Icon */}
+              <a
+                href="mailto:balasubramanian.s2000@gmail.com"
+                className="text-gray-300 hover:text-blue-400 transition duration-200"
+              >
+               <EmailIcon />
+              </a>
+            </div>
+          </div>
+
+          {/* Right Section */}
+          <div className="">
+            <p className="text-sm mb-4 text-gray-400">
+              <span className="text-red-500 font-bold">PSG4U</span> — Empowering
+              students with the tools to succeed.
+            </p>
+            <p className="text-sm text-gray-400">
+              &copy; {new Date().getFullYear()} PSG4U. All rights reserved.
+            </p>
+          </div>
         </div>
       </footer>
 
@@ -262,50 +337,80 @@ export const Main = () => {
           animate={{ x: 0, opacity: 1 }}
           exit={{ x: 200, opacity: 0 }}
           transition={{ type: "spring", stiffness: 100 }}
-          className="fixed top-24 right-32 bg-white shadow-2xl rounded-xl w-[450px] overflow-hidden z-50"
+          className="fixed top-24 right-32 bg-white shadow-2xl rounded-xl w-[420px] overflow-hidden z-50"
         >
           {/* Modal Header */}
-          <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-4 relative">
+          <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-6 relative flex flex-col items-center text-white">
             <button
               onClick={close}
-              className="absolute top-2 right-2 p-2 rounded-full text-white bg-transparent transition duration-200 hover:bg-red-600 hover:text-white"
+              className="absolute top-2 right-2 p-2 rounded-full hover:bg-red-600 transition"
             >
               <XMarkIcon className="w-5 h-5" />
             </button>
 
-            <div className="flex flex-col items-center justify-center text-white">
-              <UserCircleIcon className="w-20 h-20 mb-2" />
-              <h3 className="text-xl font-semibold">
-                {user?.rollno || "Guest"}
-              </h3>
-              <p className="text-sm text-indigo-100">Student Profile</p>
+            {/* Avatar with First Letter */}
+            <div className="w-20 h-20 rounded-full bg-white text-indigo-700 text-4xl font-bold flex items-center justify-center shadow-md mb-3">
+              {user?.name ? user.name.charAt(0).toUpperCase() : "G"}
             </div>
+
+            {/* User Details */}
+            <h3 className="text-xl font-semibold mb-1">
+              {user?.name || "Guest"}
+            </h3>
+            <p className="text-sm text-indigo-100 mb-1">
+              {user?.rollno || "guest@psgtech.ac.in"}
+            </p>
+            <p className="text-sm text-indigo-200">
+              Semester - {user?.semester || "1"}
+            </p>
           </div>
 
           {/* Info Section */}
-          <div className="p-5">
-            <div className="text-center mb-4">
+          <div className="p-6">
+            {/* Points */}
+            <div className="text-center mb-6">
               <p className="text-sm text-gray-600">
                 Points Earned:{" "}
-                <span className="font-semibold">{user?.points || "0"} pts</span>
+                <span className="font-semibold text-gray-800">
+                  {user?.points || "0"} pts
+                </span>
               </p>
+
+              <div className="flex justify-center items-center gap-2 mt-2">
+                <StarIcon className="w-6 h-6 text-yellow-400" />
+                <span className="text-lg mt-1 font-bold text-gray-700">
+                  {user?.points || "0"} Points
+                </span>
+              </div>
             </div>
 
-            {/* Badge Display */}
-            <div className="flex justify-center items-center gap-2 my-4">
-              <StarIcon className="w-6 h-6 text-yellow-400" />
-              <span className="text-lg font-bold text-gray-700">
-                {user?.points || "0"} Points
-              </span>
-            </div>
-
-            {/* Optional: Edit Button */}
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              className="w-full mt-2 bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 rounded-lg transition duration-200"
-            >
-              Edit Profile
-            </motion.button>
+            {editingSemester ? (
+              <div className="flex flex-col items-center gap-3">
+                <input
+                  type="number"
+                  min={1}
+                  max={8}
+                  value={newSemester}
+                  onChange={(e) => setNewSemester(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm"
+                />
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  onClick={handleSemesterUpdate}
+                  className="w-full bg-green-500 hover:bg-green-600 text-white font-medium py-2 rounded-lg transition duration-200"
+                >
+                  Save Semester
+                </motion.button>
+              </div>
+            ) : (
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                onClick={() => setEditingSemester(true)}
+                className="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 rounded-lg transition duration-200"
+              >
+                Edit Current Semester
+              </motion.button>
+            )}
           </div>
         </motion.div>
       )}

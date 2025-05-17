@@ -24,15 +24,17 @@ function Register() {
   const register = async (e) => {
     e.preventDefault();
     const { name, email, password } = formData;
-    setLoading(true); // Start loading when registration starts
+    setLoading(true);
 
     try {
-      const response = await fetch('https://psg4u.onrender.com/psg4u/register/', {
+      const response = await fetch('http://127.0.0.1:8000/psg4u/register/', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({
           username: email,
+          name,
           password,
           points: 0.0,
         }),
@@ -42,14 +44,16 @@ function Register() {
         alert('Registration successful! You can now sign in.');
         setIsSignUp(false);
       } else {
-        alert('User already exists or registration failed.');
+        const data = await response.json();
+        alert(`Registration failed: ${data.error || 'Unknown error'}`);
       }
     } catch (error) {
       alert('Error occurred during registration');
     } finally {
-      setLoading(false); // Stop loading once the process is done
+      setLoading(false);
     }
-  };
+};
+
 
   const login = async (e) => {
     e.preventDefault();
@@ -57,7 +61,7 @@ function Register() {
     setLoading(true); // Start loading when login starts
 
     try {
-      const response = await fetch('https://psg4u.onrender.com/psg4u/login/', {
+      const response = await fetch('http://127.0.0.1:8000/psg4u/login/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -120,6 +124,7 @@ function Register() {
                       type="email"
                       name="email"
                       placeholder="Enter your email"
+                      pattern=".+@psgtech\.ac\.in"
                       required
                       value={formData.email}
                       onChange={handleChange}
@@ -166,6 +171,7 @@ function Register() {
                       type="email"
                       name="email"
                       placeholder="Enter your email"
+                      pattern=".+@psgtech\.ac\.in"
                       required
                       value={formData.email}
                       onChange={handleChange}

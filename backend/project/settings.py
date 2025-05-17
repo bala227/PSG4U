@@ -13,7 +13,7 @@ SECRET_KEY = 'django-insecure--!zfz%ly1xwr21(&xnw9bny&vk+&i8x%t(4bal*@ix+3_!uorh
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['psg4u.onrender.com']
+ALLOWED_HOSTS = ['https://psg4u.onrender.com']
 
 
 # Application definition
@@ -85,11 +85,22 @@ WSGI_APPLICATION = 'project.wsgi.application'
 
 import dj_database_url
 
+'''
 DATABASES = {
     'default': dj_database_url.parse(
-        'postgresql://psg4u:RYRrC4NbSnzFOLMuJok2MHBfEBHkyH3I@dpg-d02etmmuk2gs73edl7pg-a/psg4u_6d1r'
+        'postgresql://psg4u:RYRrC4NbSnzFOLMuJok2MHBfEBHkyH3I@dpg-d02etmmuk2gs73edl7pg-a.singapore-postgres.render.com/psg4u_6d1r'
     )
 }
+'''
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',  # Assumes BASE_DIR is defined in your settings.py
+    }
+}
+
+
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
@@ -127,7 +138,8 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
-LOGIN_URL = '/psg4u/login/'
+LOGIN_URL = '/psg4u/login'  # If you're using React
+
 LOGIN_REDIRECT_URL = '/psg4u/me/'  # Optional
 
 # Default primary key field type
